@@ -49,11 +49,21 @@ export default function Watchlist() {
           {items.map((item) => (
             <li key={item.symbol_code} className="flex justify-between items-center py-3 border-b border-zinc-100 last:border-0">
               <div>
-                <span className="font-medium text-sm">{item.symbol_code}</span>
-                <span className="text-zinc-400 text-sm ml-2">{item.name}</span>
+                {item.name && item.name !== item.symbol_code ? (
+                  <>
+                    <span className="font-medium text-sm">{item.name}</span>
+                    <span className="text-zinc-400 text-xs ml-2">{item.symbol_code}</span>
+                  </>
+                ) : (
+                  <span className="font-medium text-sm">{item.symbol_code}</span>
+                )}
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium">${item.current?.toLocaleString()}</span>
+                <span className="text-sm font-medium">
+                  {item.symbol_code.endsWith('.KS') || item.symbol_code.endsWith('.KQ')
+                    ? `${(item.current ?? 0).toLocaleString('ko-KR')}원`
+                    : `$${(item.current ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                </span>
                 <span className={`text-sm ${(item.changePercent ?? 0) >= 0 ? 'text-red-500' : 'text-blue-500'}`}>
                   {(item.changePercent ?? 0) >= 0 ? '+' : ''}{item.changePercent?.toFixed(2)}%
                 </span>

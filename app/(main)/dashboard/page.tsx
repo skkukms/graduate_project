@@ -42,32 +42,35 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 p-8">
-      <h1 className="text-2xl font-bold text-zinc-900 mb-6">대시보드</h1>
+      <h1 className="text-xl font-bold text-zinc-900 mb-6">대시보드</h1>
 
       <StockSearch onOrderComplete={fetchDashboard} />
 
       {/* 잔고 요약 */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-2xl border border-zinc-200 p-6">
-          <p className="text-sm text-zinc-500 mb-1">보유 현금</p>
-          <p className="text-2xl font-bold text-zinc-900">
-            {cashBalance !== null ? Number(cashBalance).toLocaleString('ko-KR') + '원' : '로딩 중...'}
-          </p>
-        </div>
-        <div className="bg-white rounded-2xl border border-zinc-200 p-6">
-          <p className="text-sm text-zinc-500 mb-1">총 평가금액</p>
-          <p className="text-2xl font-bold text-zinc-900">
-            {totalEval.toLocaleString('ko-KR')}원
-          </p>
-        </div>
-        <div className="bg-white rounded-2xl border border-zinc-200 p-6">
-          <p className="text-sm text-zinc-500 mb-1">총 평가손익</p>
-          <p className={`text-2xl font-bold ${totalUnrealizedPnl >= 0 ? 'text-red-500' : 'text-blue-500'}`}>
-            {totalUnrealizedPnl >= 0 ? '+' : ''}{totalUnrealizedPnl.toLocaleString('ko-KR')}원
-          </p>
-        </div>
-      </div>
-      <PortfolioChart positions={positions} cashBalance={cashBalance ?? 0} />
+    <div className="grid grid-cols-3 gap-4 mb-6">
+    <div className="bg-white rounded-2xl border border-zinc-200 p-6">
+        <p className="text-sm text-zinc-500 mb-1">보유 현금</p>
+        <p className="text-2xl font-bold text-zinc-900">
+        {cashBalance !== null ? Number(cashBalance).toLocaleString('ko-KR') + '원' : '로딩 중...'}
+        </p>
+    </div>
+    <div className="bg-white rounded-2xl border border-zinc-200 p-6">
+        <p className="text-sm text-zinc-500 mb-1">총 평가금액</p>
+        <p className="text-2xl font-bold text-zinc-900">
+        {Number(totalEval ?? 0).toLocaleString('ko-KR')}원
+        </p>
+    </div>
+    <div className="bg-white rounded-2xl border border-zinc-200 p-6">
+        <p className="text-sm text-zinc-500 mb-1">총 평가손익</p>
+        <p className={`text-2xl font-bold ${(totalUnrealizedPnl ?? 0) >= 0 ? 'text-red-500' : 'text-blue-500'}`}>
+        {(totalUnrealizedPnl ?? 0) >= 0 ? '+' : ''}{Number(totalUnrealizedPnl ?? 0).toLocaleString('ko-KR')}원
+        </p>
+    </div>
+    </div>
+    {cashBalance !== null && (
+    <PortfolioChart positions={positions} cashBalance={cashBalance} />
+    )}
+
 
 
       {/* 보유 종목 */}
@@ -91,8 +94,14 @@ export default function DashboardPage() {
               {positions.map((p) => (
                 <tr key={p.symbol_code} className="border-b border-zinc-50">
                   <td className="py-2">
-                    <span className="font-medium">{p.name}</span>
-                    <span className="text-zinc-400 ml-2">{p.symbol_code}</span>
+                    {p.name && p.name !== p.symbol_code ? (
+                      <>
+                        <span className="font-medium">{p.name}</span>
+                        <span className="text-zinc-400 text-xs ml-2">{p.symbol_code}</span>
+                      </>
+                    ) : (
+                      <span className="font-medium">{p.symbol_code}</span>
+                    )}
                   </td>
                   <td className="text-right py-2">{p.quantity}주</td>
                   <td className="text-right py-2">{Number(p.avg_price).toLocaleString('ko-KR')}원</td>
@@ -101,7 +110,7 @@ export default function DashboardPage() {
                     {p.unrealizedPnl >= 0 ? '+' : ''}{Number(p.unrealizedPnl).toLocaleString('ko-KR')}원
                   </td>
                   <td className={`text-right py-2 ${p.unrealizedPnlRate >= 0 ? 'text-red-500' : 'text-blue-500'}`}>
-                    {p.unrealizedPnlRate >= 0 ? '+' : ''}{p.unrealizedPnlRate.toFixed(2)}%
+                    {(p.unrealizedPnlRate ?? 0) >= 0 ? '+' : ''}{(p.unrealizedPnlRate ?? 0).toFixed(2)}%
                   </td>
                 </tr>
               ))}

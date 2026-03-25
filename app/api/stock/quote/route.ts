@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import YahooFinance from 'yahoo-finance2';
+
+const yf = new YahooFinance({ validation: { logErrors: false } });
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -8,20 +11,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: '종목 코드를 입력하세요.' }, { status: 400 });
   }
 
-  const res = await fetch(
-    `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${process.env.FINNHUB_API_KEY}`
-  );
-
-  const data = await res.json();
+  const result = await yf.quote(symbol);
 
   return NextResponse.json({
-    symbol,
-    current: data.c,      // 현재가
-    open: data.o,         // 시가
-    high: data.h,         // 고가
-    low: data.l,          // 저가
-    prevClose: data.pc,   // 전일 종가
-    change: data.d,       // 변동액
-    changePercent: data.dp, // 변동률
-  });
+  symbol,
+  name: result.longName ?? result.shortName ?? symbol,
+  current: result.regularMarketPrice ?? 0,
+  open: result.regularMarketOpen ?? 0,
+  high: result.regularMarketDayHigh ?? 0,
+  low: result.regularMarketDayLow ?? 0,
+  prevClose: result.regularMarketPreviousClose ?? 0,
+  change: result.regularMarketChange ?? 0,
+  changePercent: result.regularMarketChangePercent ?? 0,
+});
 }

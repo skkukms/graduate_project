@@ -11,21 +11,22 @@ type News = {
   image: string;
 };
 
-type Props = { symbol: string };
+type Props = { symbol: string; name?: string };
 
-export default function NewsPanel({ symbol }: Props) {
+export default function NewsPanel({ symbol, name }: Props) {
   const [news, setNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/stock/news?symbol=${symbol}`)
+    const query = name ? `&name=${encodeURIComponent(name)}` : '';
+    fetch(`/api/stock/news?symbol=${symbol}${query}`)
       .then(r => r.json())
       .then(data => {
         setNews(data.news ?? []);
         setLoading(false);
       });
-  }, [symbol]);
+  }, [symbol, name]);
 
   return (
     <div className="bg-white rounded-2xl border border-zinc-200 p-6 mt-6">

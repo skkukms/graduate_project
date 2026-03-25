@@ -4,7 +4,6 @@ import { useSearchParams } from 'next/navigation';
 import { createChart, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
 import NewsPanel from './NewsPanel';
 
-
 function calcMA(candles: any[], period: number) {
   return candles.map((c, i) => {
     if (i < period - 1) return null;
@@ -39,12 +38,15 @@ const PERIOD_OPTIONS: Record<string, { label: string; value: string }[]> = {
 export default function ChartPage() {
   const searchParams = useSearchParams();
   const initialSymbol = searchParams.get('symbol') ?? 'AAPL';
+  const initialMarket = initialSymbol.endsWith('.KS') || initialSymbol.endsWith('.KQ') ? 'KR' : 'US';
+
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const [symbol, setSymbol] = useState(initialSymbol);
   const [input, setInput] = useState(initialSymbol);
+  const [market, setMarket] = useState<'US' | 'KR'>(initialMarket);
   const [interval, setInterval] = useState('1d');
   const [period, setPeriod] = useState('1Y');
   const [showMA5, setShowMA5] = useState(true);
@@ -53,19 +55,22 @@ export default function ChartPage() {
   const [ohlcv, setOhlcv] = useState<any>(null);
   const [suggestions, setSuggestions] = useState<{ symbol: string; name: string }[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-
-  // 주문 관련
   const [qty, setQty] = useState(1);
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderMessage, setOrderMessage] = useState('');
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [stockName, setStockName] = useState('');
 
-  // 현재가 조회
+
   useEffect(() => {
-    fetch(`/api/stock/quote?symbol=${symbol}`)
-      .then(r => r.json())
-      .then(data => setCurrentPrice(data.current));
-  }, [symbol]);
+  fetch(`/api/stock/quote?symbol=${symbol}`)
+    .then(r => r.json())
+    .then(data => {
+      setCurrentPrice(data.current);
+      setStockName(data.name ?? symbol);
+    });
+}, [symbol]);
+
 
   async function handleOrder(side: 'BUY' | 'SELL') {
     setOrderLoading(true);
@@ -90,40 +95,23 @@ export default function ChartPage() {
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: 520,
-      layout: {
-        background: { color: '#ffffff' },
-        textColor: '#374151',
-        fontSize: 12,
-      },
-      grid: {
-        vertLines: { color: '#f3f4f6' },
-        horzLines: { color: '#f3f4f6' },
-      },
+      layout: { background: { color: '#ffffff' }, textColor: '#374151', fontSize: 12 },
+      grid: { vertLines: { color: '#f3f4f6' }, horzLines: { color: '#f3f4f6' } },
       crosshair: { mode: 1 },
       rightPriceScale: { borderColor: '#e5e7eb' },
-      timeScale: {
-        borderColor: '#e5e7eb',
-        timeVisible: true,
-        secondsVisible: false,
-      },
+      timeScale: { borderColor: '#e5e7eb', timeVisible: true, secondsVisible: false },
     });
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#ef4444',
-      downColor: '#3b82f6',
-      borderUpColor: '#ef4444',
-      borderDownColor: '#3b82f6',
-      wickUpColor: '#ef4444',
-      wickDownColor: '#3b82f6',
+      upColor: '#ef4444', downColor: '#3b82f6',
+      borderUpColor: '#ef4444', borderDownColor: '#3b82f6',
+      wickUpColor: '#ef4444', wickDownColor: '#3b82f6',
     });
 
     const volumeSeries = chart.addSeries(HistogramSeries, {
-      priceFormat: { type: 'volume' },
-      priceScaleId: 'volume',
+      priceFormat: { type: 'volume' }, priceScaleId: 'volume',
     });
-    chart.priceScale('volume').applyOptions({
-      scaleMargins: { top: 0.8, bottom: 0 },
-    });
+    chart.priceScale('volume').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
     const ma5Series = chart.addSeries(LineSeries, {
       color: '#f59e0b', lineWidth: 1,
@@ -164,20 +152,29 @@ export default function ChartPage() {
       }
     };
     window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      chart.remove();
-    };
+    return () => { window.removeEventListener('resize', handleResize); chart.remove(); };
   }, [symbol, period, interval, showMA5, showMA20, showMA60]);
 
   return (
     <div className="min-h-screen bg-zinc-50 p-8">
       <h1 className="text-2xl font-bold text-zinc-900 mb-6">차트</h1>
-
-      <div className="flex gap-6">
-        {/* 왼쪽: 차트 영역 */}
-        <div className="flex-1 min-w-0">
+      <div className="flex gap-6">        <div className="flex-1 min-w-0">
           <div className="bg-white rounded-2xl border border-zinc-200 p-6 mb-6">
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => { setMarket('US'); setInput('AAPL'); setSymbol('AAPL'); }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${market === 'US' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
+              >
+                🇺🇸 미국
+              </button>
+              <button
+                onClick={() => { setMarket('KR'); setInput('005930.KS'); setSymbol('005930.KS'); }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${market === 'KR' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
+              >
+                🇰🇷 국내
+              </button>
+            </div>
+
             {/* 검색 */}
             <div className="relative flex gap-2 mb-4">
               <div className="relative flex-1">
@@ -185,22 +182,23 @@ export default function ChartPage() {
                   type="text"
                   value={input}
                   onChange={(e) => {
-                    const val = e.target.value.toUpperCase();
+                    const val = market === 'US' ? e.target.value.toUpperCase() : e.target.value;
                     setInput(val);
                     if (val.length < 1) { setSuggestions([]); setShowSuggestions(false); return; }
                     if (debounceRef.current) clearTimeout(debounceRef.current);
                     debounceRef.current = setTimeout(async () => {
-                      const res = await fetch(`/api/stock/search?q=${val}`);
+                      const url = market === 'KR'
+                        ? `/api/stock/kr-search?q=${val}`
+                        : `/api/stock/search?q=${val}`;
+                      const res = await fetch(url);
                       const data = await res.json();
                       setSuggestions(data.results?.slice(0, 8) ?? []);
                       setShowSuggestions(true);
                     }, 500);
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') { setSymbol(input); setShowSuggestions(false); }
-                  }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { setSymbol(input); setShowSuggestions(false); } }}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                  placeholder="종목명 또는 티커 (예: AAPL)"
+                  placeholder={market === 'KR' ? '종목명 (예: 삼성전자)' : '종목명 또는 티커 (예: AAPL)'}
                   className="w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm outline-none focus:border-zinc-600"
                 />
                 {showSuggestions && suggestions.length > 0 && (
@@ -208,15 +206,11 @@ export default function ChartPage() {
                     {suggestions.map((s) => (
                       <li
                         key={s.symbol}
-                        onMouseDown={() => {
-                          setInput(s.symbol);
-                          setSymbol(s.symbol);
-                          setShowSuggestions(false);
-                        }}
+                        onMouseDown={() => { setInput(s.symbol); setSymbol(s.symbol); setShowSuggestions(false); }}
                         className="flex justify-between items-center px-4 py-2.5 text-sm hover:bg-zinc-50 cursor-pointer border-b border-zinc-100 last:border-0"
                       >
-                        <span className="font-medium text-zinc-900">{s.symbol}</span>
-                        <span className="text-zinc-400 text-xs truncate ml-4">{s.name}</span>
+                        <span className="font-medium text-zinc-900">{s.name}</span>
+                        <span className="text-zinc-400 text-xs ml-4">{s.symbol}</span>
                       </li>
                     ))}
                   </ul>
@@ -235,13 +229,8 @@ export default function ChartPage() {
               {INTERVALS.map((i) => (
                 <button
                   key={i.value}
-                  onClick={() => {
-                    setInterval(i.value);
-                    setPeriod(PERIOD_OPTIONS[i.value][0].value);
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                    interval === i.value ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                  }`}
+                  onClick={() => { setInterval(i.value); setPeriod(PERIOD_OPTIONS[i.value][0].value); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium ${interval === i.value ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
                 >
                   {i.label}
                 </button>
@@ -254,9 +243,7 @@ export default function ChartPage() {
                 <button
                   key={p.value}
                   onClick={() => setPeriod(p.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                    period === p.value ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium ${period === p.value ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
                 >
                   {p.label}
                 </button>
@@ -267,25 +254,19 @@ export default function ChartPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowMA5(!showMA5)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                  showMA5 ? 'border-amber-400 text-amber-600 bg-amber-50' : 'border-zinc-200 text-zinc-400'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${showMA5 ? 'border-amber-400 text-amber-600 bg-amber-50' : 'border-zinc-200 text-zinc-400'}`}
               >
                 <span className="w-3 h-0.5 bg-amber-400 inline-block rounded" />MA5
               </button>
               <button
                 onClick={() => setShowMA20(!showMA20)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                  showMA20 ? 'border-blue-400 text-blue-600 bg-blue-50' : 'border-zinc-200 text-zinc-400'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${showMA20 ? 'border-blue-400 text-blue-600 bg-blue-50' : 'border-zinc-200 text-zinc-400'}`}
               >
                 <span className="w-3 h-0.5 bg-blue-400 inline-block rounded" />MA20
               </button>
               <button
                 onClick={() => setShowMA60(!showMA60)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                  showMA60 ? 'border-purple-400 text-purple-600 bg-purple-50' : 'border-zinc-200 text-zinc-400'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${showMA60 ? 'border-purple-400 text-purple-600 bg-purple-50' : 'border-zinc-200 text-zinc-400'}`}
               >
                 <span className="w-3 h-0.5 bg-purple-400 inline-block rounded" />MA60
               </button>
@@ -295,7 +276,7 @@ export default function ChartPage() {
           {/* 차트 */}
           <div className="bg-white rounded-2xl border border-zinc-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-zinc-900">{symbol}</h2>
+              <h2 className="text-lg font-semibold text-zinc-900">{stockName || symbol}</h2>
               {ohlcv && (
                 <div className="flex gap-4 text-xs text-zinc-500">
                   <span>시가 <span className="text-zinc-800 font-medium">{ohlcv.open?.toFixed(2)}</span></span>
@@ -308,27 +289,32 @@ export default function ChartPage() {
             </div>
             <div ref={chartContainerRef} />
           </div>
+
+          <NewsPanel symbol={symbol} name={stockName} />
         </div>
 
         {/* 오른쪽: 주문 패널 */}
         <div className="w-72 shrink-0">
           <div className="bg-white rounded-2xl border border-zinc-200 p-6 sticky top-8">
-            <h2 className="text-lg font-semibold text-zinc-900 mb-4">{symbol} 주문</h2>
+            <h2 className="text-lg font-semibold text-zinc-900 mb-4">{stockName || symbol} 주문</h2>
 
-            {/* 현재가 */}
             <div className="bg-zinc-50 rounded-xl p-4 mb-4">
               <p className="text-xs text-zinc-500 mb-1">현재가</p>
               <p className="text-2xl font-bold text-zinc-900">
-                {currentPrice ? `$${currentPrice.toLocaleString()}` : '로딩 중...'}
-              </p>
-              {currentPrice && (
-                <p className="text-xs text-zinc-400 mt-1">
-                  ≈ {(currentPrice * 1350).toLocaleString('ko-KR')}원
-                </p>
-              )}
+  {currentPrice
+    ? market === 'KR'
+      ? `${currentPrice.toLocaleString('ko-KR')}원`
+      : `$${currentPrice.toLocaleString()}`
+    : '로딩 중...'}
+</p>
+{currentPrice && market === 'US' && (
+  <p className="text-xs text-zinc-400 mt-1">
+    ≈ {(currentPrice * 1350).toLocaleString('ko-KR')}원
+  </p>
+)}
+
             </div>
 
-            {/* 수량 */}
             <div className="mb-4">
               <p className="text-xs text-zinc-500 mb-2">주문 수량</p>
               <input
@@ -340,12 +326,14 @@ export default function ChartPage() {
               />
               {currentPrice && (
                 <p className="text-xs text-zinc-400 mt-2">
-                  예상금액: {(currentPrice * qty * 1350).toLocaleString('ko-KR')}원
-                </p>
+  예상금액: {market === 'KR'
+    ? (currentPrice! * qty).toLocaleString('ko-KR')
+    : (currentPrice! * qty * 1350).toLocaleString('ko-KR')}원
+</p>
+
               )}
             </div>
 
-            {/* 매수/매도 버튼 */}
             <div className="flex gap-2 mb-3">
               <button
                 onClick={() => handleOrder('BUY')}
@@ -369,7 +357,6 @@ export default function ChartPage() {
           </div>
         </div>
       </div>
-      <NewsPanel symbol={symbol} />
     </div>
   );
 }

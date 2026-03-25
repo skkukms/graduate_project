@@ -41,8 +41,14 @@ export default function TradeHistory() {
             {orders.map((o) => (
               <tr key={o.id} className="border-b border-zinc-50">
                 <td className="py-2">
-                  <span className="font-medium">{o.symbol_code}</span>
-                  <span className="text-zinc-400 ml-2">{o.name}</span>
+                  {o.name && o.name !== o.symbol_code ? (
+                    <>
+                      <span className="font-medium">{o.name}</span>
+                      <span className="text-zinc-400 text-xs ml-2">{o.symbol_code}</span>
+                    </>
+                  ) : (
+                    <span className="font-medium">{o.symbol_code}</span>
+                  )}
                 </td>
                 <td className="text-center py-2">
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${o.side === 'BUY' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
@@ -50,8 +56,16 @@ export default function TradeHistory() {
                   </span>
                 </td>
                 <td className="text-right py-2">{o.qty}주</td>
-                <td className="text-right py-2">{Number(o.fill_price).toLocaleString('ko-KR')}원</td>
-                <td className="text-right py-2">{(Number(o.fill_price) * o.qty).toLocaleString('ko-KR')}원</td>
+                <td className="text-right py-2">
+                  {o.symbol_code.endsWith('.KS') || o.symbol_code.endsWith('.KQ')
+                    ? `${Number(o.fill_price).toLocaleString('ko-KR')}원`
+                    : `$${Number(o.fill_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                </td>
+                <td className="text-right py-2">
+                  {o.symbol_code.endsWith('.KS') || o.symbol_code.endsWith('.KQ')
+                    ? `${(Number(o.fill_price) * o.qty).toLocaleString('ko-KR')}원`
+                    : `$${(Number(o.fill_price) * o.qty).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                </td>
                 <td className="text-right py-2 text-zinc-400">
                   {new Date(o.created_at).toLocaleString('ko-KR')}
                 </td>

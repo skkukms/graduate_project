@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import pool from '@/lib/db';
+import YahooFinance from 'yahoo-finance2';
+
+const yf = new YahooFinance({ validation: { logErrors: false } });
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('token')?.value;
@@ -13,34 +16,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '올바른 주문 정보를 입력하세요.' }, { status: 400 });
   }
 
-  // 현재가 조회
-  const quoteRes = await fetch(
-    `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${process.env.FINNHUB_API_KEY}`
-  );
-  const quoteData = await quoteRes.json();
-  const fillPrice = quoteData.c;
+  const isKorean = symbol.endsWith('.KS') || symbol.endsWith('.KQ');
+
+  // 현재가 조회 (Yahoo Finance)
+  const result = await yf.quote(symbol) as any;
+  const fillPrice = result.regularMarketPrice ?? 0;
+
 
   if (!fillPrice || fillPrice <= 0) {
     return NextResponse.json({ error: '시세 조회 실패' }, { status: 400 });
   }
 
-  const conn = await pool.getConnection();
-  
-    await conn.execute(
-    `INSERT INTO symbols (code, name, market) VALUES (?, ?, 'US')
-    ON DUPLICATE KEY UPDATE name = VALUES(name)`,
-    [symbol, symbol]
-    );
-
+  // 환율 변환 (국내주식은 이미 원화)
+  let fillPriceKrw: number;
+  if (isKorean) {
+    fillPriceKrw = fillPrice;
+  } else {
     const fxRes = await fetch(
-  `https://finnhub.io/api/v1/forex/rates?base=USD&token=${process.env.FINNHUB_API_KEY}`
+      'https://query1.finance.yahoo.com/v8/finance/chart/USDKRW=X?interval=1d&range=1d',
+      { headers: { 'User-Agent': 'Mozilla/5.0' } }
     );
     const fxData = await fxRes.json();
-    const usdToKrw = fxData.quote?.KRW ?? 1350;
+    const usdToKrw = fxData.chart?.result?.[0]?.meta?.regularMarketPrice ?? 1350;
+    fillPriceKrw = fillPrice * usdToKrw;
+  }
 
-    const fillPriceKrw = fillPrice * usdToKrw;
-
+  const conn = await pool.getConnection();
   try {
+    // symbols 테이블 등록 (실제 종목명 저장)
+    const stockName = result.longName ?? result.shortName ?? symbol;
+    await conn.execute(
+      `INSERT INTO symbols (code, name, market) VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE name = VALUES(name)`,
+      [symbol, stockName, isKorean ? 'KR' : 'US']
+    );
+
     // 계좌 조회
     const [accounts]: any = await conn.execute(
       'SELECT id, cash_balance FROM accounts WHERE user_id = ?',
@@ -54,13 +64,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: '잔고가 부족합니다.' }, { status: 400 });
       }
 
-      // 잔고 차감
       await conn.execute(
         'UPDATE accounts SET cash_balance = cash_balance - ? WHERE id = ?',
         [totalCost, account.id]
       );
 
-      // 포지션 업데이트
       await conn.execute(
         `INSERT INTO positions (account_id, symbol_code, quantity, avg_price)
          VALUES (?, ?, ?, ?)
@@ -71,7 +79,6 @@ export async function POST(req: NextRequest) {
       );
 
     } else if (side === 'SELL') {
-      // 보유 수량 확인
       const [positions]: any = await conn.execute(
         'SELECT quantity FROM positions WHERE account_id = ? AND symbol_code = ?',
         [account.id, symbol]
@@ -81,32 +88,28 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: '보유 수량이 부족합니다.' }, { status: 400 });
       }
 
-      // 잔고 추가
       await conn.execute(
         'UPDATE accounts SET cash_balance = cash_balance + ? WHERE id = ?',
         [totalCost, account.id]
       );
 
-      // 포지션 업데이트
       await conn.execute(
         'UPDATE positions SET quantity = quantity - ? WHERE account_id = ? AND symbol_code = ?',
         [qty, account.id, symbol]
       );
 
-      // 수량 0이면 삭제
       await conn.execute(
         'DELETE FROM positions WHERE account_id = ? AND symbol_code = ? AND quantity = 0',
         [account.id, symbol]
       );
     }
 
-    // 주문 기록
     await conn.execute(
       'INSERT INTO orders (account_id, symbol_code, side, qty, fill_price) VALUES (?, ?, ?, ?, ?)',
       [account.id, symbol, side, qty, fillPriceKrw]
     );
 
-    return NextResponse.json({ ok: true, fillPrice });
+    return NextResponse.json({ ok: true, fillPrice: fillPriceKrw });
   } finally {
     conn.release();
   }

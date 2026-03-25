@@ -17,7 +17,7 @@ const COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#f97316'
 export default function PortfolioChart({ positions, cashBalance }: Props) {
   const data = [
     ...positions.map((p) => ({
-      name: p.symbol_code,
+      name: p.name || p.symbol_code,
       value: Math.round(p.evalAmount),
     })),
     { name: '현금', value: Math.round(cashBalance) },
@@ -31,7 +31,7 @@ export default function PortfolioChart({ positions, cashBalance }: Props) {
 
       <div className="flex items-center gap-8">
         {/* 도넛 차트 */}
-        <div className="w-64 h-64 shrink-0">
+        <div style={{ width: 256, height: 256 }} className="shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie

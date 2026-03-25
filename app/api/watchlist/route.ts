@@ -38,9 +38,10 @@ export async function POST(req: NextRequest) {
   );
   const account = accounts[0];
 
+  const market = (symbol.endsWith('.KS') || symbol.endsWith('.KQ')) ? 'KR' : 'US';
   await pool.execute(
-    `INSERT IGNORE INTO symbols (code, name, market) VALUES (?, ?, 'US')`,
-    [symbol, name ?? symbol]
+    `INSERT IGNORE INTO symbols (code, name, market) VALUES (?, ?, ?)`,
+    [symbol, name ?? symbol, market]
   );
 
   await pool.execute(

@@ -1,18 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import pool from '@/lib/db';
+import YahooFinance from 'yahoo-finance2';
 
-// 관심종목 조회
+const yf = new YahooFinance({ validation: { logErrors: false } });
+
+async function getAccount(token: string) {
+  const decoded = verifyToken(token);
+  if (!decoded) return null;
+  const [accounts]: any = await pool.execute(
+    'SELECT id FROM accounts WHERE user_id = ?', [decoded.userId]
+  );
+  return accounts[0] ?? null;
+}
+
 export async function GET(req: NextRequest) {
   const token = req.cookies.get('token')?.value;
   if (!token) return NextResponse.json({ error: '인증 필요' }, { status: 401 });
 
-  const { userId } = verifyToken(token);
-
-  const [accounts]: any = await pool.execute(
-    'SELECT id FROM accounts WHERE user_id = ?', [userId]
-  );
-  const account = accounts[0];
+  const account = await getAccount(token);
+  if (!account) return NextResponse.json({ error: '인증 만료 또는 계좌 없음' }, { status: 401 });
 
   const [items]: any = await pool.execute(
     `SELECT w.symbol_code, s.name
@@ -22,28 +29,38 @@ export async function GET(req: NextRequest) {
     [account.id]
   );
 
-  return NextResponse.json({ items });
+  const itemsWithQuotes = await Promise.all(
+    items.map(async (item: any) => {
+      try {
+        const quote = await yf.quote(item.symbol_code) as any;
+        return {
+          ...item,
+          current: quote.regularMarketPrice ?? 0,
+          changePercent: quote.regularMarketChangePercent ?? 0,
+        };
+      } catch {
+        return { ...item, current: 0, changePercent: 0 };
+      }
+    })
+  );
+
+  return NextResponse.json({ items: itemsWithQuotes });
 }
 
-// 관심종목 추가
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('token')?.value;
   if (!token) return NextResponse.json({ error: '인증 필요' }, { status: 401 });
 
-  const { userId } = verifyToken(token);
+  const account = await getAccount(token);
+  if (!account) return NextResponse.json({ error: '인증 만료 또는 계좌 없음' }, { status: 401 });
+
   const { symbol, name } = await req.json();
-
-  const [accounts]: any = await pool.execute(
-    'SELECT id FROM accounts WHERE user_id = ?', [userId]
-  );
-  const account = accounts[0];
-
   const market = (symbol.endsWith('.KS') || symbol.endsWith('.KQ')) ? 'KR' : 'US';
+
   await pool.execute(
     `INSERT IGNORE INTO symbols (code, name, market) VALUES (?, ?, ?)`,
     [symbol, name ?? symbol, market]
   );
-
   await pool.execute(
     `INSERT IGNORE INTO watchlist_items (account_id, symbol_code) VALUES (?, ?)`,
     [account.id, symbol]
@@ -52,19 +69,14 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-// 관심종목 삭제
 export async function DELETE(req: NextRequest) {
   const token = req.cookies.get('token')?.value;
   if (!token) return NextResponse.json({ error: '인증 필요' }, { status: 401 });
 
-  const { userId } = verifyToken(token);
+  const account = await getAccount(token);
+  if (!account) return NextResponse.json({ error: '인증 만료 또는 계좌 없음' }, { status: 401 });
+
   const { symbol } = await req.json();
-
-  const [accounts]: any = await pool.execute(
-    'SELECT id FROM accounts WHERE user_id = ?', [userId]
-  );
-  const account = accounts[0];
-
   await pool.execute(
     'DELETE FROM watchlist_items WHERE account_id = ? AND symbol_code = ?',
     [account.id, symbol]

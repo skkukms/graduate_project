@@ -3,9 +3,8 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 type Stock = { symbol: string; name: string };
-type Props = { onOrderComplete: () => void };
 
-export default function StockSearch({ onOrderComplete }: Props) {
+export default function StockSearch() {
   const router = useRouter();
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [query, setQuery] = useState('');

@@ -60,16 +60,25 @@ export default function ChartPage() {
   const [orderMessage, setOrderMessage] = useState('');
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [stockName, setStockName] = useState('');
+  const [usdToKrw, setUsdToKrw] = useState(1350);
 
 
   useEffect(() => {
-  fetch(`/api/stock/quote?symbol=${symbol}`)
-    .then(r => r.json())
-    .then(data => {
-      setCurrentPrice(data.current);
-      setStockName(data.name ?? symbol);
-    });
-}, [symbol]);
+    fetch(`/api/stock/quote?symbol=${symbol}`)
+      .then(r => r.json())
+      .then(data => {
+        setCurrentPrice(data.current);
+        setStockName(data.name ?? symbol);
+        if (data.usdToKrw) setUsdToKrw(data.usdToKrw);
+      });
+  }, [symbol]);
+
+  const formatPrice = (price?: number) => {
+    if (!price) return '-';
+    return market === 'KR'
+      ? price.toLocaleString('ko-KR') + '원'
+      : '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
 
   async function handleOrder(side: 'BUY' | 'SELL') {
@@ -279,10 +288,10 @@ export default function ChartPage() {
               <h2 className="text-lg font-semibold text-zinc-900">{stockName || symbol}</h2>
               {ohlcv && (
                 <div className="flex gap-4 text-xs text-zinc-500">
-                  <span>시가 <span className="text-zinc-800 font-medium">{ohlcv.open?.toFixed(2)}</span></span>
-                  <span>고가 <span className="text-red-500 font-medium">{ohlcv.high?.toFixed(2)}</span></span>
-                  <span>저가 <span className="text-blue-500 font-medium">{ohlcv.low?.toFixed(2)}</span></span>
-                  <span>종가 <span className="text-zinc-800 font-medium">{ohlcv.close?.toFixed(2)}</span></span>
+                  <span>시가 <span className="text-zinc-800 font-medium">{formatPrice(ohlcv.open)}</span></span>
+                  <span>고가 <span className="text-red-500 font-medium">{formatPrice(ohlcv.high)}</span></span>
+                  <span>저가 <span className="text-blue-500 font-medium">{formatPrice(ohlcv.low)}</span></span>
+                  <span>종가 <span className="text-zinc-800 font-medium">{formatPrice(ohlcv.close)}</span></span>
                   <span>거래량 <span className="text-zinc-800 font-medium">{ohlcv.volume?.toLocaleString()}</span></span>
                 </div>
               )}
@@ -309,7 +318,7 @@ export default function ChartPage() {
 </p>
 {currentPrice && market === 'US' && (
   <p className="text-xs text-zinc-400 mt-1">
-    ≈ {(currentPrice * 1350).toLocaleString('ko-KR')}원
+    ≈ {(currentPrice * usdToKrw).toLocaleString('ko-KR')}원
   </p>
 )}
 
@@ -328,7 +337,7 @@ export default function ChartPage() {
                 <p className="text-xs text-zinc-400 mt-2">
   예상금액: {market === 'KR'
     ? (currentPrice! * qty).toLocaleString('ko-KR')
-    : (currentPrice! * qty * 1350).toLocaleString('ko-KR')}원
+    : (currentPrice! * qty * usdToKrw).toLocaleString('ko-KR')}원
 </p>
 
               )}

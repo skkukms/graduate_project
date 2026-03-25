@@ -24,6 +24,15 @@ export default function DashboardPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [totalEval, setTotalEval] = useState<number>(0);
   const [totalUnrealizedPnl, setTotalUnrealizedPnl] = useState<number>(0);
+  const [resetting, setResetting] = useState(false);
+
+  async function handleReset() {
+    if (!confirm('계좌를 초기화하면 보유 종목과 거래 내역이 모두 삭제되고 초기 자금 1,000만원으로 돌아갑니다. 계속하시겠습니까?')) return;
+    setResetting(true);
+    await fetch('/api/account/reset', { method: 'POST' });
+    await fetchDashboard();
+    setResetting(false);
+  }
 
   const fetchDashboard = useCallback(() => {
     fetch('/api/dashboard')
@@ -42,9 +51,18 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 p-8">
-      <h1 className="text-xl font-bold text-zinc-900 mb-6">대시보드</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-bold text-zinc-900">대시보드</h1>
+        <button
+          onClick={handleReset}
+          disabled={resetting}
+          className="text-xs text-zinc-400 hover:text-red-500 border border-zinc-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+        >
+          {resetting ? '초기화 중...' : '계좌 초기화'}
+        </button>
+      </div>
 
-      <StockSearch onOrderComplete={fetchDashboard} />
+      <StockSearch />
 
       {/* 잔고 요약 */}
     <div className="grid grid-cols-3 gap-4 mb-6">

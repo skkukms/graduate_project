@@ -25,6 +25,15 @@ export default function PortfolioChart({ positions, cashBalance }: Props) {
 
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
+  if (total === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-zinc-200 p-6 mb-6">
+        <h2 className="text-lg font-semibold text-zinc-900 mb-4">포트폴리오 비중</h2>
+        <p className="text-sm text-zinc-400">보유 종목 또는 현금이 없습니다.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-2xl border border-zinc-200 p-6 mb-6">
       <h2 className="text-lg font-semibold text-zinc-900 mb-6">포트폴리오 비중</h2>

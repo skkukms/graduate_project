@@ -6,11 +6,14 @@ export async function GET(req: NextRequest) {
   const token = req.cookies.get('token')?.value;
   if (!token) return NextResponse.json({ error: '인증 필요' }, { status: 401 });
 
-  const { userId } = verifyToken(token);
+  const decoded = verifyToken(token);
+  if (!decoded) return NextResponse.json({ error: '인증 만료' }, { status: 401 });
+  const { userId } = decoded;
 
   const [accounts]: any = await pool.execute(
     'SELECT id FROM accounts WHERE user_id = ?', [userId]
   );
+  if (accounts.length === 0) return NextResponse.json({ error: '계좌 없음' }, { status: 404 });
   const account = accounts[0];
 
   const [orders]: any = await pool.execute(

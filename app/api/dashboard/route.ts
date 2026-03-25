@@ -9,7 +9,9 @@ export async function GET(req: NextRequest) {
   const token = req.cookies.get('token')?.value;
   if (!token) return NextResponse.json({ error: '인증 필요' }, { status: 401 });
 
-  const { userId } = verifyToken(token);
+  const decoded = verifyToken(token);
+  if (!decoded) return NextResponse.json({ error: '인증 만료' }, { status: 401 });
+  const { userId } = decoded;
 
   const [accounts]: any = await pool.execute(
     'SELECT id, cash_balance FROM accounts WHERE user_id = ?',
@@ -47,10 +49,12 @@ export async function GET(req: NextRequest) {
         const rawPrice = quote.regularMarketPrice ?? 0;
         const currentPriceKrw = isKorean ? rawPrice : rawPrice * usdToKrw;
 
-        // 국내주식 이름 가져오기
-        const displayName = isKorean
-          ? (quote.longName ?? quote.shortName ?? p.name)
-          : p.name;
+        const displayName = quote.longName ?? quote.shortName ?? p.name;
+
+        // symbols 이름이 코드로 저장된 경우 업데이트
+        if (p.name === p.symbol_code || !p.name) {
+          pool.execute('UPDATE symbols SET name = ? WHERE code = ?', [displayName, p.symbol_code]);
+        }
 
         const evalAmount = currentPriceKrw * p.quantity;
         const investAmount = p.avg_price * p.quantity;

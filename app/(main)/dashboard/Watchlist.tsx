@@ -14,16 +14,7 @@ export default function Watchlist() {
   async function fetchWatchlist() {
     const res = await fetch('/api/watchlist');
     const data = await res.json();
-
-    // 각 종목 현재가 조회
-    const withQuotes = await Promise.all(
-      data.items.map(async (item: WatchItem) => {
-        const q = await fetch(`/api/stock/quote?symbol=${item.symbol_code}`);
-        const qData = await q.json();
-        return { ...item, current: qData.current, changePercent: qData.changePercent };
-      })
-    );
-    setItems(withQuotes);
+    setItems(data.items ?? []);
   }
 
   async function handleDelete(symbol: string) {
@@ -65,7 +56,7 @@ export default function Watchlist() {
                     : `$${(item.current ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </span>
                 <span className={`text-sm ${(item.changePercent ?? 0) >= 0 ? 'text-red-500' : 'text-blue-500'}`}>
-                  {(item.changePercent ?? 0) >= 0 ? '+' : ''}{item.changePercent?.toFixed(2)}%
+                  {(item.changePercent ?? 0) >= 0 ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%
                 </span>
                 <button
                   onClick={() => handleDelete(item.symbol_code)}

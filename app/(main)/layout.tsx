@@ -17,18 +17,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <nav className="bg-white border-b border-zinc-200 px-8 py-0 flex items-center justify-between h-14 sticky top-0 z-50">
+    <div className="min-h-screen bg-[#0e0e0e]">
+      <nav className="bg-[#1a1a1a] border-b border-[#2a2a2a] px-8 py-0 flex items-center justify-between h-14 sticky top-0 z-50">
         <div className="flex items-center gap-1">
-          <span className="font-bold text-zinc-900 text-lg mr-6">MockStock</span>
+          <span className="font-bold text-[#f0f0f0] text-base mr-6 tracking-tight">MockStock</span>
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 pathname.startsWith(item.href)
-                  ? 'bg-zinc-100 text-zinc-900'
-                  : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
+                  ? 'bg-[#2a2a2a] text-[#f0f0f0]'
+                  : 'text-[#888888] hover:text-[#f0f0f0] hover:bg-[#222222]'
               }`}
             >
               {item.label}
@@ -37,7 +37,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </div>
         <button
           onClick={handleLogout}
-          className="text-sm text-zinc-500 hover:text-zinc-900 px-3 py-1.5 rounded-lg hover:bg-zinc-100 transition-colors"
+          className="text-sm text-[#555555] hover:text-[#888888] px-3 py-1.5 rounded-lg hover:bg-[#222222] transition-colors"
         >
           로그아웃
         </button>

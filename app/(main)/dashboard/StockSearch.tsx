@@ -13,19 +13,19 @@ export default function StockSearch() {
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   return (
-    <div className="bg-white rounded-2xl border border-zinc-200 p-6 mb-6">
-      <h2 className="text-lg font-semibold text-zinc-900 mb-4">종목 검색</h2>
+    <div className="bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a] p-6 mb-4">
+      <h2 className="text-base font-semibold text-[#f0f0f0] mb-4">종목 검색</h2>
 
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => { setMarket('US'); setQuery(''); setSuggestions([]); }}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${market === 'US' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
+          className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${market === 'US' ? 'bg-[#2a2a2a] text-[#f0f0f0]' : 'text-[#555555] hover:text-[#888888]'}`}
         >
           🇺🇸 미국
         </button>
         <button
           onClick={() => { setMarket('KR'); setQuery(''); setSuggestions([]); }}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${market === 'KR' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
+          className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${market === 'KR' ? 'bg-[#2a2a2a] text-[#f0f0f0]' : 'text-[#555555] hover:text-[#888888]'}`}
         >
           🇰🇷 국내
         </button>
@@ -41,9 +41,7 @@ export default function StockSearch() {
             if (val.length < 1) { setSuggestions([]); setShowSuggestions(false); return; }
             if (debounceRef.current) clearTimeout(debounceRef.current);
             debounceRef.current = setTimeout(async () => {
-              const url = market === 'KR'
-                ? `/api/stock/kr-search?q=${val}`
-                : `/api/stock/search?q=${val}`;
+              const url = market === 'KR' ? `/api/stock/kr-search?q=${val}` : `/api/stock/search?q=${val}`;
               const res = await fetch(url);
               const data = await res.json();
               setSuggestions(data.results?.slice(0, 8) ?? []);
@@ -51,19 +49,19 @@ export default function StockSearch() {
             }, 500);
           }}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-          placeholder={market === 'KR' ? '종목명 (예: 삼성전자)' : '종목명 또는 티커 (예: AAPL)'}
-          className="w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm outline-none focus:border-zinc-600"
+          placeholder={market === 'KR' ? '종목명 검색 (예: 삼성전자)' : '종목명 또는 티커 (예: AAPL)'}
+          className="w-full rounded-xl bg-[#222222] border border-[#2a2a2a] px-4 py-2.5 text-sm text-[#f0f0f0] placeholder-[#555555] outline-none focus:border-[#4b9eff] transition-colors"
         />
         {showSuggestions && suggestions.length > 0 && (
-          <ul className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-xl shadow-lg overflow-hidden">
+          <ul className="absolute z-10 top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl shadow-2xl overflow-hidden">
             {suggestions.map((s) => (
               <li
                 key={s.symbol}
                 onMouseDown={() => router.push(`/chart?symbol=${s.symbol}`)}
-                className="flex justify-between items-center px-4 py-2.5 text-sm hover:bg-zinc-50 cursor-pointer border-b border-zinc-100 last:border-0"
+                className="flex justify-between items-center px-4 py-2.5 text-sm hover:bg-[#222222] cursor-pointer border-b border-[#222222] last:border-0 transition-colors"
               >
-                <span className="font-medium text-zinc-900">{s.name}</span>
-                <span className="text-zinc-400 text-xs ml-4">{s.symbol}</span>
+                <span className="font-medium text-[#f0f0f0]">{s.name}</span>
+                <span className="text-[#555555] text-xs ml-4">{s.symbol}</span>
               </li>
             ))}
           </ul>

@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
   }
 
   const account = accounts[0];
+  const cashBalance = Math.round(Number(account.cash_balance));
 
   const [positions]: any = await pool.execute(
     `SELECT p.symbol_code, p.quantity, p.avg_price, p.realized_pnl, s.name
@@ -32,13 +33,18 @@ export async function GET(req: NextRequest) {
     [account.id]
   );
 
-  // 환율 조회 (Yahoo Finance)
-  const fxRes = await fetch(
-    'https://query1.finance.yahoo.com/v8/finance/chart/USDKRW=X?interval=1d&range=1d',
-    { headers: { 'User-Agent': 'Mozilla/5.0' } }
-  );
-  const fxData = await fxRes.json();
-  const usdToKrw = fxData.chart?.result?.[0]?.meta?.regularMarketPrice ?? 1350;
+  // 환율 조회
+  let usdToKrw = 1350;
+  try {
+    const fxRes = await fetch(
+      'https://query1.finance.yahoo.com/v8/finance/chart/USDKRW=X?interval=1d&range=1d',
+      { headers: { 'User-Agent': 'Mozilla/5.0' } }
+    );
+    const fxData = await fxRes.json();
+    usdToKrw = fxData.chart?.result?.[0]?.meta?.regularMarketPrice ?? 1350;
+  } catch {
+    usdToKrw = 1350;
+  }
 
   const positionsWithPnl = await Promise.all(
     positions.map(async (p: any) => {
@@ -47,17 +53,17 @@ export async function GET(req: NextRequest) {
       try {
         const quote = await yf.quote(p.symbol_code) as any;
         const rawPrice = quote.regularMarketPrice ?? 0;
-        const currentPriceKrw = isKorean ? rawPrice : rawPrice * usdToKrw;
+        const currentPriceKrw = Math.round(isKorean ? rawPrice : rawPrice * usdToKrw);
 
         const displayName = quote.longName ?? quote.shortName ?? p.name;
 
         // symbols 이름이 코드로 저장된 경우 업데이트
         if (p.name === p.symbol_code || !p.name) {
-          pool.execute('UPDATE symbols SET name = ? WHERE code = ?', [displayName, p.symbol_code]);
+          await pool.execute('UPDATE symbols SET name = ? WHERE code = ?', [displayName, p.symbol_code]);
         }
 
-        const evalAmount = currentPriceKrw * p.quantity;
-        const investAmount = p.avg_price * p.quantity;
+        const evalAmount = Math.round(currentPriceKrw * p.quantity);
+        const investAmount = Math.round(Number(p.avg_price) * p.quantity);
         const unrealizedPnl = evalAmount - investAmount;
         const unrealizedPnlRate = investAmount > 0 ? (unrealizedPnl / investAmount) * 100 : 0;
 
@@ -83,11 +89,15 @@ export async function GET(req: NextRequest) {
 
   const totalEval = positionsWithPnl.reduce((sum, p) => sum + p.evalAmount, 0);
   const totalUnrealizedPnl = positionsWithPnl.reduce((sum, p) => sum + p.unrealizedPnl, 0);
+  const totalRealizedPnl = positionsWithPnl.reduce((sum, p) => sum + Math.round(Number(p.realized_pnl ?? 0)), 0);
+  const totalAsset = cashBalance + totalEval;
 
   return NextResponse.json({
-    cashBalance: account.cash_balance,
+    cashBalance,
     totalEval,
     totalUnrealizedPnl,
+    totalRealizedPnl,
+    totalAsset,
     positions: positionsWithPnl,
   });
 }

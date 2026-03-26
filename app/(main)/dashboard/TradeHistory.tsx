@@ -63,7 +63,7 @@ export default function TradeHistory() {
               return (
                 <tr key={o.id} className="group">
                   {/* 종목 */}
-                  <td className="py-3 pl-0 border-b border-(--surface-2) group-last:border-0 rounded-l-2xl group-hover:bg-white/[0.04] transition-all duration-150">
+                  <td className="py-3 pl-0 border-b border-(--surface-2) group-last:border-0 rounded-l-2xl group-hover:bg-white/4 transition-all duration-150">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="flex items-baseline gap-1.5 min-w-0">
                         <span className="font-medium text-(--text-strong) group-hover:text-white truncate transition-colors duration-150">
@@ -77,7 +77,7 @@ export default function TradeHistory() {
                   </td>
 
                   {/* 구분 */}
-                  <td className="text-center py-3 px-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/[0.04] transition-all duration-150 whitespace-nowrap">
+                  <td className="text-center py-3 px-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/4 transition-all duration-150 whitespace-nowrap">
                     <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-semibold ${
                       o.side === 'BUY'
                         ? 'bg-[#ff4b4b]/10 text-[#ff4b4b]'
@@ -88,22 +88,22 @@ export default function TradeHistory() {
                   </td>
 
                   {/* 수량 */}
-                  <td className="text-right py-3 px-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/[0.04] text-(--text-muted) group-hover:text-(--text) transition-all duration-150 whitespace-nowrap">
+                  <td className="text-right py-3 px-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/4 text-(--text-muted) group-hover:text-(--text) transition-all duration-150 whitespace-nowrap">
                     {o.qty}<span className="text-[11px] text-(--text-disabled) ml-0.5">주</span>
                   </td>
 
                   {/* 체결가 */}
-                  <td className="text-right py-3 px-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/[0.04] text-(--text-strong) group-hover:text-white transition-all duration-150 tabular-nums whitespace-nowrap">
+                  <td className="text-right py-3 px-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/4 text-(--text-strong) group-hover:text-white transition-all duration-150 tabular-nums whitespace-nowrap">
                     {priceStr}
                   </td>
 
                   {/* 총금액 */}
-                  <td className="text-right py-3 px-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/[0.04] text-(--text-muted) group-hover:text-(--text) transition-all duration-150 tabular-nums whitespace-nowrap">
+                  <td className="text-right py-3 px-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/4 text-(--text-muted) group-hover:text-(--text) transition-all duration-150 tabular-nums whitespace-nowrap">
                     {totalStr}
                   </td>
 
                   {/* 실현손익 */}
-                  <td className="text-right py-3 px-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/[0.04] transition-all duration-150 tabular-nums whitespace-nowrap">
+                  <td className="text-right py-3 px-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/4 transition-all duration-150 tabular-nums whitespace-nowrap">
                     {o.side === 'SELL' && o.realized_pnl !== null ? (
                       <span className={`font-medium ${Number(o.realized_pnl) >= 0 ? 'text-[#ff4b4b]' : 'text-[#4b9eff]'}`}>
                         {Number(o.realized_pnl) >= 0 ? '+' : ''}{Number(o.realized_pnl).toLocaleString('ko-KR')}원
@@ -114,7 +114,7 @@ export default function TradeHistory() {
                   </td>
 
                   {/* 일시 */}
-                  <td className="text-right py-3 pl-3 pr-1 border-b border-(--surface-2) group-last:border-0 rounded-r-2xl group-hover:bg-white/[0.04] text-xs text-(--text-subtle) group-hover:text-(--text-muted) transition-all duration-150 whitespace-nowrap">
+                  <td className="text-right py-3 pl-3 pr-1 border-b border-(--surface-2) group-last:border-0 rounded-r-2xl group-hover:bg-white/4 text-xs text-(--text-subtle) group-hover:text-(--text-muted) transition-all duration-150 whitespace-nowrap">
                     {date} {time}
                   </td>
                 </tr>

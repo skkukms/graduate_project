@@ -44,8 +44,8 @@ export default function Watchlist() {
               className="group flex items-stretch cursor-pointer border-b border-(--surface-2) last:border-0"
             >
               {/* 왼쪽 셀 */}
-              <div className="flex-1 flex items-center gap-3 py-3 pl-0 rounded-l-2xl group-hover:bg-white/[0.04] transition-all duration-150">
-                <div className="w-[3px] self-stretch rounded-r-full bg-transparent group-hover:bg-[#4b9eff] transition-all duration-200 shrink-0" />
+              <div className="flex-1 flex items-center gap-3 py-3 pl-0 rounded-l-2xl group-hover:bg-white/4 transition-all duration-150">
+                <div className="w-0.75 self-stretch rounded-r-full bg-transparent group-hover:bg-[#4b9eff] transition-all duration-200 shrink-0" />
                 {item.name && item.name !== item.symbol_code ? (
                   <>
                     <span className="font-medium text-sm text-(--text-strong) group-hover:text-white transition-colors duration-150">{item.name}</span>
@@ -57,7 +57,7 @@ export default function Watchlist() {
               </div>
 
               {/* 오른쪽 셀 */}
-              <div className="flex items-center gap-4 py-3 pr-1 rounded-r-2xl group-hover:bg-white/[0.04] transition-all duration-150">
+              <div className="flex items-center gap-4 py-3 pr-1 rounded-r-2xl group-hover:bg-white/4 transition-all duration-150">
                 <span className="text-sm font-medium text-(--text-strong) group-hover:text-white transition-colors duration-150">
                   {item.symbol_code.endsWith('.KS') || item.symbol_code.endsWith('.KQ')
                     ? `${(item.current ?? 0).toLocaleString('ko-KR')}원`

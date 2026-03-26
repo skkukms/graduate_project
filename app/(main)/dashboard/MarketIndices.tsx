@@ -83,7 +83,7 @@ export default function MarketIndices() {
     return (
       <div className="grid grid-cols-4 gap-3 mb-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-(--surface) rounded-2xl border border-(--border) p-4 h-[72px] animate-pulse" />
+          <div key={i} className="bg-(--surface) rounded-2xl border border-(--border) p-4 h-18 animate-pulse" />
         ))}
       </div>
     );

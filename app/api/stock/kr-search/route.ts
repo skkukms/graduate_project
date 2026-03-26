@@ -9,13 +9,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: '검색어를 입력하세요.' }, { status: 400 });
   }
 
-  const [rows]: any = await pool.execute(
-    `SELECT symbol, name FROM kr_stocks
-     WHERE name LIKE ? OR symbol LIKE ?
-     LIMIT 8`,
-    [`%${query}%`, `%${query}%`]
-  );
+  try {
+    const [rows]: any = await pool.execute(
+      `SELECT symbol, name FROM kr_stocks
+       WHERE name LIKE ? OR symbol LIKE ?
+       LIMIT 8`,
+      [`%${query}%`, `%${query}%`]
+    );
 
-  const results = rows.map((r: any) => ({ symbol: r.symbol, name: r.name }));
-  return NextResponse.json({ results });
+    const results = rows.map((r: any) => ({ symbol: r.symbol, name: r.name }));
+    return NextResponse.json({ results });
+  } catch {
+    return NextResponse.json({ results: [] });
+  }
 }

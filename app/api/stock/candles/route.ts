@@ -46,25 +46,29 @@ export async function GET(req: NextRequest) {
   const from = new Date();
   from.setDate(from.getDate() - days);
 
-  const result = await yf.chart(symbol, {
-    period1: from,
-    period2: to,
-    interval: interval as any,
-  });
-
-  const candles: any[] = [];
-  const volumes: any[] = [];
-
-  for (const q of result.quotes) {
-    if (!q.open || !q.high || !q.low || !q.close) continue;
-    const time = Math.floor(new Date(q.date).getTime() / 1000);
-    candles.push({ time, open: q.open, high: q.high, low: q.low, close: q.close });
-    volumes.push({
-      time,
-      value: q.volume ?? 0,
-      color: q.close >= q.open ? 'rgba(239,68,68,0.4)' : 'rgba(59,130,246,0.4)',
+  try {
+    const result = await yf.chart(symbol, {
+      period1: from,
+      period2: to,
+      interval: interval as any,
     });
-  }
 
-  return NextResponse.json({ candles, volumes });
+    const candles: any[] = [];
+    const volumes: any[] = [];
+
+    for (const q of result.quotes) {
+      if (!q.open || !q.high || !q.low || !q.close) continue;
+      const time = Math.floor(new Date(q.date).getTime() / 1000);
+      candles.push({ time, open: q.open, high: q.high, low: q.low, close: q.close });
+      volumes.push({
+        time,
+        value: q.volume ?? 0,
+        color: q.close >= q.open ? 'rgba(239,68,68,0.4)' : 'rgba(59,130,246,0.4)',
+      });
+    }
+
+    return NextResponse.json({ candles, volumes });
+  } catch {
+    return NextResponse.json({ error: '차트 데이터 조회 실패' }, { status: 500 });
+  }
 }

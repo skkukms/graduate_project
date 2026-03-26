@@ -11,15 +11,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: '검색어를 입력하세요.' }, { status: 400 });
   }
 
-  const results = await yf.search(query);
+  try {
+    const results = await yf.search(query);
+    const filtered = results.quotes
+      ?.filter((item: any) => item.quoteType === 'EQUITY' && item.symbol && !item.symbol.includes('.'))
+      .slice(0, 8)
+      .map((item: any) => ({
+        symbol: item.symbol,
+        name: item.shortname ?? item.longname ?? item.symbol,
+      })) ?? [];
 
-  const filtered = results.quotes
-    ?.filter((item: any) => item.quoteType === 'EQUITY' && item.symbol && !item.symbol.includes('.'))
-    .slice(0, 8)
-    .map((item: any) => ({
-      symbol: item.symbol,
-      name: item.shortname ?? item.longname ?? item.symbol,
-    })) ?? [];
-
-  return NextResponse.json({ results: filtered });
+    return NextResponse.json({ results: filtered });
+  } catch {
+    return NextResponse.json({ results: [] });
+  }
 }

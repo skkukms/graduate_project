@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 type WatchItem = {
   symbol_code: string;
@@ -10,6 +11,7 @@ type WatchItem = {
 
 export default function Watchlist() {
   const [items, setItems] = useState<WatchItem[]>([]);
+  const router = useRouter();
 
   async function fetchWatchlist() {
     const res = await fetch('/api/watchlist');
@@ -29,26 +31,34 @@ export default function Watchlist() {
   useEffect(() => { fetchWatchlist(); }, []);
 
   return (
-    <div className="bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a] p-6 mb-4">
-      <h2 className="text-base font-semibold text-[#f0f0f0] mb-4">관심종목</h2>
+    <div className="bg-(--surface) rounded-2xl border border-(--border) p-6 mb-4 animate-fade-up card-hover">
+      <h2 className="text-base font-semibold text-(--text-strong) mb-4">관심종목</h2>
       {items.length === 0 ? (
-        <p className="text-sm text-[#555555]">관심종목이 없습니다.</p>
+        <p className="text-sm text-(--text-subtle)">관심종목이 없습니다.</p>
       ) : (
-        <ul>
+        <div>
           {items.map((item) => (
-            <li key={item.symbol_code} className="flex justify-between items-center py-3 border-b border-[#222222] last:border-0">
-              <div>
+            <div
+              key={item.symbol_code}
+              onClick={() => router.push(`/chart?symbol=${item.symbol_code}`)}
+              className="group flex items-stretch cursor-pointer border-b border-(--surface-2) last:border-0"
+            >
+              {/* 왼쪽 셀 */}
+              <div className="flex-1 flex items-center gap-3 py-3 pl-0 rounded-l-2xl group-hover:bg-white/[0.04] transition-all duration-150">
+                <div className="w-[3px] self-stretch rounded-r-full bg-transparent group-hover:bg-[#4b9eff] transition-all duration-200 shrink-0" />
                 {item.name && item.name !== item.symbol_code ? (
                   <>
-                    <span className="font-medium text-sm text-[#f0f0f0]">{item.name}</span>
-                    <span className="text-[#555555] text-xs ml-2">{item.symbol_code}</span>
+                    <span className="font-medium text-sm text-(--text-strong) group-hover:text-white transition-colors duration-150">{item.name}</span>
+                    <span className="text-(--text-subtle) text-xs">{item.symbol_code}</span>
                   </>
                 ) : (
-                  <span className="font-medium text-sm text-[#f0f0f0]">{item.symbol_code}</span>
+                  <span className="font-medium text-sm text-(--text-strong) group-hover:text-white transition-colors duration-150">{item.symbol_code}</span>
                 )}
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-medium text-[#f0f0f0]">
+
+              {/* 오른쪽 셀 */}
+              <div className="flex items-center gap-4 py-3 pr-1 rounded-r-2xl group-hover:bg-white/[0.04] transition-all duration-150">
+                <span className="text-sm font-medium text-(--text-strong) group-hover:text-white transition-colors duration-150">
                   {item.symbol_code.endsWith('.KS') || item.symbol_code.endsWith('.KQ')
                     ? `${(item.current ?? 0).toLocaleString('ko-KR')}원`
                     : `$${(item.current ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -57,15 +67,15 @@ export default function Watchlist() {
                   {(item.changePercent ?? 0) >= 0 ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%
                 </span>
                 <button
-                  onClick={() => handleDelete(item.symbol_code)}
-                  className="text-[#444444] hover:text-[#888888] text-xs transition-colors"
+                  onClick={(e) => { e.stopPropagation(); handleDelete(item.symbol_code); }}
+                  className="text-(--text-disabled) hover:text-(--text-muted) text-xs transition-colors"
                 >
                   삭제
                 </button>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

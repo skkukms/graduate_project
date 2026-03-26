@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   if (!account) return NextResponse.json({ error: '인증 만료 또는 계좌 없음' }, { status: 401 });
 
   const { symbol, name } = await req.json();
-  const market = (symbol.endsWith('.KS') || symbol.endsWith('.KQ')) ? 'KR' : 'US';
+  const market = symbol.endsWith('.KS') ? 'KOSPI' : symbol.endsWith('.KQ') ? 'KOSDAQ' : 'US';
 
   await pool.execute(
     `INSERT IGNORE INTO symbols (code, name, market) VALUES (?, ?, ?)`,

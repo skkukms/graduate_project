@@ -1,9 +1,11 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import StockSearch from './StockSearch';
 import Watchlist from './Watchlist';
 import TradeHistory from './TradeHistory';
 import PortfolioChart from './PortfolioChart';
+import MarketIndices from './MarketIndices';
 
 type Position = {
   symbol_code: string;
@@ -18,6 +20,7 @@ type Position = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [cashBalance, setCashBalance] = useState<number | null>(null);
   const [totalAsset, setTotalAsset] = useState<number>(0);
@@ -56,61 +59,43 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0e0e0e] p-8">
+    <div className="min-h-screen bg-(--background) p-8 animate-fade-up">
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-[#f0f0f0]">대시보드</h1>
+        <h1 className="text-xl font-bold text-(--text-strong)">대시보드</h1>
         <button
           onClick={handleReset}
           disabled={resetting}
-          className="text-xs text-[#555555] hover:text-[#ff4b4b] border border-[#2a2a2a] hover:border-[#ff4b4b]/30 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+          className="text-xs text-(--text-subtle) hover:text-[#ff4b4b] border border-(--border) hover:border-[#ff4b4b]/30 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
         >
           {resetting ? '초기화 중...' : '계좌 초기화'}
         </button>
       </div>
 
+      <MarketIndices />
+
       <StockSearch />
 
       {/* 잔고 요약 */}
-      <div className="grid grid-cols-5 gap-3 mb-6">
-        <div className="bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a] p-5">
-          <p className="text-xs text-[#555555] mb-2">총 자산</p>
-          <p className="text-xl font-bold text-[#f0f0f0]">
-            {loading ? <span className="text-[#333333]">——</span> : totalAsset.toLocaleString('ko-KR') + '원'}
-          </p>
-        </div>
-        <div className="bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a] p-5">
-          <p className="text-xs text-[#555555] mb-2">보유 현금</p>
-          <p className="text-xl font-bold text-[#f0f0f0]">
-            {loading ? <span className="text-[#333333]">——</span> : (cashBalance ?? 0).toLocaleString('ko-KR') + '원'}
-          </p>
-        </div>
-        <div className="bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a] p-5">
-          <p className="text-xs text-[#555555] mb-2">총 평가금액</p>
-          <p className="text-xl font-bold text-[#f0f0f0]">
-            {loading ? <span className="text-[#333333]">——</span> : totalEval.toLocaleString('ko-KR') + '원'}
-          </p>
-        </div>
-        <div className="bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a] p-5">
-          <p className="text-xs text-[#555555] mb-2">총 평가손익</p>
-          {loading ? (
-            <p className="text-xl font-bold text-[#333333]">——</p>
-          ) : (
-            <p className={`text-xl font-bold ${totalUnrealizedPnl >= 0 ? 'text-[#ff4b4b]' : 'text-[#4b9eff]'}`}>
-              {totalUnrealizedPnl >= 0 ? '+' : ''}{totalUnrealizedPnl.toLocaleString('ko-KR')}원
-            </p>
-          )}
-        </div>
-        <div className="bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a] p-5">
-          <p className="text-xs text-[#555555] mb-2">총 실현손익</p>
-          {loading ? (
-            <p className="text-xl font-bold text-[#333333]">——</p>
-          ) : (
-            <p className={`text-xl font-bold ${totalRealizedPnl >= 0 ? 'text-[#ff4b4b]' : 'text-[#4b9eff]'}`}>
-              {totalRealizedPnl >= 0 ? '+' : ''}{totalRealizedPnl.toLocaleString('ko-KR')}원
-            </p>
-          )}
-        </div>
+      <div className="grid grid-cols-5 gap-3 mb-4">
+        {[
+          { label: '총 자산', value: loading ? null : totalAsset, color: 'text-(--text-strong)' },
+          { label: '보유 현금', value: loading ? null : (cashBalance ?? 0), color: 'text-(--text-strong)' },
+          { label: '총 평가금액', value: loading ? null : totalEval, color: 'text-(--text-strong)' },
+          { label: '총 평가손익', value: loading ? null : totalUnrealizedPnl, color: totalUnrealizedPnl >= 0 ? 'text-[#ff4b4b]' : 'text-[#4b9eff]' },
+          { label: '총 실현손익', value: loading ? null : totalRealizedPnl, color: totalRealizedPnl >= 0 ? 'text-[#ff4b4b]' : 'text-[#4b9eff]' },
+        ].map((card, i) => (
+          <div key={card.label} className={`bg-(--surface) rounded-2xl border border-(--border) p-5 card-hover animate-fade-up stagger-${i + 1}`}>
+            <p className="text-xs text-(--text-subtle) mb-2">{card.label}</p>
+            {card.value === null ? (
+              <p className="text-xl font-bold text-(--border-hover)">——</p>
+            ) : (
+              <p className={`text-xl font-bold ${card.color}`}>
+                {i >= 3 && card.value > 0 ? '+' : ''}{card.value.toLocaleString('ko-KR')}원
+              </p>
+            )}
+          </div>
+        ))}
       </div>
 
       {!loading && cashBalance !== null && (
@@ -118,49 +103,52 @@ export default function DashboardPage() {
       )}
 
       {/* 보유 종목 */}
-      <div className="bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a] p-6 mb-4">
-        <h2 className="text-base font-semibold text-[#f0f0f0] mb-4">보유 종목</h2>
+      <div className="bg-(--surface) rounded-2xl border border-(--border) p-6 mb-4">
+        <h2 className="text-base font-semibold text-(--text-strong) mb-4">보유 종목</h2>
         {loading ? (
-          <p className="text-sm text-[#555555]">로딩 중...</p>
+          <p className="text-sm text-(--text-subtle)">로딩 중...</p>
         ) : positions.length === 0 ? (
-          <p className="text-sm text-[#555555]">보유 종목이 없습니다.</p>
+          <p className="text-sm text-(--text-subtle)">보유 종목이 없습니다.</p>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full text-sm border-separate border-spacing-0">
             <thead>
-              <tr className="text-[#555555] border-b border-[#2a2a2a]">
-                <th className="text-left pb-3 font-medium">종목</th>
-                <th className="text-right pb-3 font-medium">수량</th>
-                <th className="text-right pb-3 font-medium">평균단가</th>
-                <th className="text-right pb-3 font-medium">현재가</th>
-                <th className="text-right pb-3 font-medium">평가손익</th>
-                <th className="text-right pb-3 font-medium">수익률</th>
-                <th className="text-right pb-3 font-medium">실현손익</th>
+              <tr className="text-(--text-subtle)">
+                <th className="text-left pb-3 font-medium border-b border-(--border)">종목</th>
+                <th className="text-right pb-3 font-medium border-b border-(--border)">수량</th>
+                <th className="text-right pb-3 font-medium border-b border-(--border)">평균단가</th>
+                <th className="text-right pb-3 font-medium border-b border-(--border)">현재가</th>
+                <th className="text-right pb-3 font-medium border-b border-(--border)">평가손익</th>
+                <th className="text-right pb-3 font-medium border-b border-(--border)">수익률</th>
               </tr>
             </thead>
             <tbody>
               {positions.map((p) => (
-                <tr key={p.symbol_code} className="border-b border-[#222222] last:border-0">
-                  <td className="py-3">
-                    {p.name && p.name !== p.symbol_code ? (
-                      <>
-                        <span className="font-medium text-[#f0f0f0]">{p.name}</span>
-                        <span className="text-[#555555] text-xs ml-2">{p.symbol_code}</span>
-                      </>
-                    ) : (
-                      <span className="font-medium text-[#f0f0f0]">{p.symbol_code}</span>
-                    )}
+                <tr
+                  key={p.symbol_code}
+                  onClick={() => router.push(`/chart?symbol=${p.symbol_code}`)}
+                  className="cursor-pointer group"
+                >
+                  <td className="py-0 pl-0 border-b border-(--surface-2) group-last:border-0 rounded-l-2xl group-hover:bg-white/[0.04] transition-all duration-150">
+                    <div className="flex items-center gap-3 py-3">
+                      <div className="w-[3px] self-stretch rounded-r-full bg-transparent group-hover:bg-[#4b9eff] transition-all duration-200" />
+                      {p.name && p.name !== p.symbol_code ? (
+                        <>
+                          <span className="font-medium text-(--text-strong) group-hover:text-white transition-colors duration-150">{p.name}</span>
+                          <span className="text-(--text-subtle) text-xs">{p.symbol_code}</span>
+                        </>
+                      ) : (
+                        <span className="font-medium text-(--text-strong) group-hover:text-white transition-colors duration-150">{p.symbol_code}</span>
+                      )}
+                    </div>
                   </td>
-                  <td className="text-right py-3 text-[#888888]">{p.quantity}주</td>
-                  <td className="text-right py-3 text-[#888888]">{Number(p.avg_price).toLocaleString('ko-KR')}원</td>
-                  <td className="text-right py-3 text-[#f0f0f0]">{Number(p.currentPrice).toLocaleString('ko-KR')}원</td>
-                  <td className={`text-right py-3 ${p.unrealizedPnl >= 0 ? 'text-[#ff4b4b]' : 'text-[#4b9eff]'}`}>
+                  <td className="text-right py-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/[0.04] text-(--text-muted) group-hover:text-(--text) transition-all duration-150">{p.quantity}주</td>
+                  <td className="text-right py-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/[0.04] text-(--text-muted) group-hover:text-(--text) transition-all duration-150">{Number(p.avg_price).toLocaleString('ko-KR')}원</td>
+                  <td className="text-right py-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/[0.04] text-(--text-strong) group-hover:text-white transition-all duration-150">{Number(p.currentPrice).toLocaleString('ko-KR')}원</td>
+                  <td className={`text-right py-3 border-b border-(--surface-2) group-last:border-0 group-hover:bg-white/[0.04] transition-all duration-150 ${p.unrealizedPnl >= 0 ? 'text-[#ff4b4b]' : 'text-[#4b9eff]'}`}>
                     {p.unrealizedPnl >= 0 ? '+' : ''}{Number(p.unrealizedPnl).toLocaleString('ko-KR')}원
                   </td>
-                  <td className={`text-right py-3 ${p.unrealizedPnlRate >= 0 ? 'text-[#ff4b4b]' : 'text-[#4b9eff]'}`}>
+                  <td className={`text-right py-3 pr-1 border-b border-(--surface-2) group-last:border-0 rounded-r-2xl group-hover:bg-white/[0.04] transition-all duration-150 ${p.unrealizedPnlRate >= 0 ? 'text-[#ff4b4b]' : 'text-[#4b9eff]'}`}>
                     {p.unrealizedPnlRate >= 0 ? '+' : ''}{p.unrealizedPnlRate.toFixed(2)}%
-                  </td>
-                  <td className={`text-right py-3 ${(p.realized_pnl ?? 0) >= 0 ? 'text-[#ff4b4b]' : 'text-[#4b9eff]'}`}>
-                    {(p.realized_pnl ?? 0) >= 0 ? '+' : ''}{Math.round(Number(p.realized_pnl ?? 0)).toLocaleString('ko-KR')}원
                   </td>
                 </tr>
               ))}

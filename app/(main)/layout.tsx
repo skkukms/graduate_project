@@ -17,18 +17,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   ];
 
   return (
-    <div className="min-h-screen bg-[#0e0e0e]">
-      <nav className="bg-[#1a1a1a] border-b border-[#2a2a2a] px-8 py-0 flex items-center justify-between h-14 sticky top-0 z-50">
+    <div className="min-h-screen bg-(--background)">
+      <nav className="bg-(--surface) border-b border-(--border) px-8 py-0 flex items-center justify-between h-14 sticky top-0 z-50">
         <div className="flex items-center gap-1">
-          <span className="font-bold text-[#f0f0f0] text-base mr-6 tracking-tight">MockStock</span>
+          <span className="font-bold text-(--text-strong) text-base mr-6 tracking-tight">MockStock</span>
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 pathname.startsWith(item.href)
-                  ? 'bg-[#2a2a2a] text-[#f0f0f0]'
-                  : 'text-[#888888] hover:text-[#f0f0f0] hover:bg-[#222222]'
+                  ? 'bg-(--border) text-(--text-strong)'
+                  : 'text-(--text-muted) hover:text-(--text-strong) hover:bg-(--surface-2)'
               }`}
             >
               {item.label}
@@ -37,7 +37,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </div>
         <button
           onClick={handleLogout}
-          className="text-sm text-[#555555] hover:text-[#888888] px-3 py-1.5 rounded-lg hover:bg-[#222222] transition-colors"
+          className="text-sm text-(--text-subtle) hover:text-[#ff4b4b] border border-(--border) hover:border-[#ff4b4b]/30 px-3 py-1.5 rounded-lg transition-colors"
         >
           로그아웃
         </button>

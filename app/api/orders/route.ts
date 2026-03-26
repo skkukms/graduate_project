@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const account = accounts[0];
 
   const [orders]: any = await pool.execute(
-    `SELECT o.id, o.symbol_code, s.name, o.side, o.qty, o.fill_price, o.created_at
+    `SELECT o.id, o.symbol_code, s.name, o.side, o.qty, o.fill_price, o.fill_price_usd, o.realized_pnl, o.created_at
      FROM orders o
      JOIN symbols s ON o.symbol_code = s.code
      WHERE o.account_id = ?

@@ -21,10 +21,14 @@ export async function POST(req: NextRequest) {
   const isKorean = symbol.endsWith('.KS') || symbol.endsWith('.KQ');
 
   // 현재가 조회 (Yahoo Finance)
-  const result = await yf.quote(symbol) as any;
+  let result: any;
+  try {
+    result = await yf.quote(symbol);
+  } catch {
+    return NextResponse.json({ error: '시세 조회 실패' }, { status: 400 });
+  }
+
   const fillPrice = result.regularMarketPrice ?? 0;
-
-
   if (!fillPrice || fillPrice <= 0) {
     return NextResponse.json({ error: '시세 조회 실패' }, { status: 400 });
   }
@@ -34,13 +38,17 @@ export async function POST(req: NextRequest) {
   if (isKorean) {
     fillPriceKrw = fillPrice;
   } else {
-    const fxRes = await fetch(
-      'https://query1.finance.yahoo.com/v8/finance/chart/USDKRW=X?interval=1d&range=1d',
-      { headers: { 'User-Agent': 'Mozilla/5.0' } }
-    );
-    const fxData = await fxRes.json();
-    const usdToKrw = fxData.chart?.result?.[0]?.meta?.regularMarketPrice ?? 1350;
-    fillPriceKrw = fillPrice * usdToKrw;
+    try {
+      const fxRes = await fetch(
+        'https://query1.finance.yahoo.com/v8/finance/chart/USDKRW=X?interval=1d&range=1d',
+        { headers: { 'User-Agent': 'Mozilla/5.0' } }
+      );
+      const fxData = await fxRes.json();
+      const usdToKrw = fxData.chart?.result?.[0]?.meta?.regularMarketPrice ?? 1350;
+      fillPriceKrw = fillPrice * usdToKrw;
+    } catch {
+      fillPriceKrw = fillPrice * 1350;
+    }
   }
 
   const conn = await pool.getConnection();
@@ -50,7 +58,7 @@ export async function POST(req: NextRequest) {
     await conn.execute(
       `INSERT INTO symbols (code, name, market) VALUES (?, ?, ?)
        ON DUPLICATE KEY UPDATE name = VALUES(name)`,
-      [symbol, stockName, isKorean ? 'KR' : 'US']
+      [symbol, stockName, symbol.endsWith('.KS') ? 'KOSPI' : symbol.endsWith('.KQ') ? 'KOSDAQ' : 'US']
     );
 
     // 계좌 조회
@@ -61,6 +69,7 @@ export async function POST(req: NextRequest) {
     if (accounts.length === 0) return NextResponse.json({ error: '계좌 없음' }, { status: 404 });
     const account = accounts[0];
     const totalCost = fillPriceKrw * qty;
+    let realizedPnl: number | null = null;
 
     if (side === 'BUY') {
       if (account.cash_balance < totalCost) {
@@ -83,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     } else if (side === 'SELL') {
       const [positions]: any = await conn.execute(
-        'SELECT quantity FROM positions WHERE account_id = ? AND symbol_code = ?',
+        'SELECT quantity, avg_price FROM positions WHERE account_id = ? AND symbol_code = ?',
         [account.id, symbol]
       );
 
@@ -91,14 +100,20 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: '보유 수량이 부족합니다.' }, { status: 400 });
       }
 
+      const avgPrice = Number(positions[0].avg_price);
+      realizedPnl = Math.round((fillPriceKrw - avgPrice) * qty);
+
       await conn.execute(
         'UPDATE accounts SET cash_balance = cash_balance + ? WHERE id = ?',
         [totalCost, account.id]
       );
 
       await conn.execute(
-        'UPDATE positions SET quantity = quantity - ? WHERE account_id = ? AND symbol_code = ?',
-        [qty, account.id, symbol]
+        `UPDATE positions SET
+           quantity = quantity - ?,
+           realized_pnl = realized_pnl + ?
+         WHERE account_id = ? AND symbol_code = ?`,
+        [qty, realizedPnl, account.id, symbol]
       );
 
       await conn.execute(
@@ -108,11 +123,13 @@ export async function POST(req: NextRequest) {
     }
 
     await conn.execute(
-      'INSERT INTO orders (account_id, symbol_code, side, qty, fill_price) VALUES (?, ?, ?, ?, ?)',
-      [account.id, symbol, side, qty, fillPriceKrw]
+      'INSERT INTO orders (account_id, symbol_code, side, qty, fill_price, fill_price_usd, realized_pnl) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [account.id, symbol, side, qty, fillPriceKrw, isKorean ? null : fillPrice, realizedPnl]
     );
 
-    return NextResponse.json({ ok: true, fillPrice: fillPriceKrw });
+    return NextResponse.json({ ok: true, fillPrice: fillPriceKrw, fillPriceUsd: isKorean ? null : fillPrice });
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message ?? '주문 처리 중 오류가 발생했습니다.' }, { status: 500 });
   } finally {
     conn.release();
   }

@@ -1,26 +1,235 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #161b22;
+  --foreground: #eaeef2;
+  --surface: #1c2230;
+  --surface-2: #222b3a;
+  --border: #2a3444;
+  --border-hover: #364258;
+  --text-strong: #eaeef2;
+  --text: #8b949e;
+  --text-muted: #7d8590;
+  --text-subtle: #586069;
+  --text-disabled: #444c56;
+  --accent: #4b9eff;
+  --up: #ff4b4b;
+  --down: #4b9eff;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--background);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist), Arial, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 스크롤바 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2b2b2b;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+  background-clip: padding-box;
+}
+
+/* 페이지 진입 애니메이션 */
+@keyframes fadeUpSoft {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUpSoft 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease both;
+}
+
+/* 카드 stagger */
+.stagger-1 {
+  animation-delay: 0.04s;
+}
+.stagger-2 {
+  animation-delay: 0.08s;
+}
+.stagger-3 {
+  animation-delay: 0.12s;
+}
+.stagger-4 {
+  animation-delay: 0.16s;
+}
+.stagger-5 {
+  animation-delay: 0.2s;
+}
+
+/* 카드 hover */
+.card-hover {
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease,
+    background-color 180ms ease,
+    opacity 180ms ease;
+  will-change: transform;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 14px 36px rgba(0, 0, 0, 0.34);
+  border-color: var(--border-hover);
+}
+
+/* 버튼 클릭 */
+.btn-press {
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+}
+
+.btn-press:hover {
+  filter: brightness(1.04);
+}
+
+.btn-press:active {
+  transform: translateY(1px) scale(0.985);
+  opacity: 0.92;
+}
+
+/* 숫자 변경 애니메이션 */
+@keyframes numberPop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.number-pop {
+  animation: numberPop 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 공통 인터랙션 */
+input,
+button,
+select,
+textarea,
+a {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    opacity 180ms ease;
+}
+
+/* 입력창 포커스 */
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow:
+    0 0 0 1px rgba(75, 158, 255, 0.35),
+    0 0 0 4px rgba(75, 158, 255, 0.1);
+}
+
+/* 리스트 아이템 hover */
+.list-item-hover {
+  transition:
+    background-color 0.15s ease,
+    padding-left 0.15s ease,
+    color 0.15s ease;
+}
+
+.list-item-hover:hover {
+  transform: translateX(4px);
+}
+
+/* 테이블 행 hover에 쓰고 싶으면 class만 추가해서 사용 */
+.table-row-hover {
+  transition: background-color 160ms ease;
+}
+
+.table-row-hover:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* 선택 드래그 색 */
+::selection {
+  background: rgba(75, 158, 255, 0.22);
+  color: var(--text-strong);
+}
+
+/* 접근성: 모션 줄이기 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .card-hover:hover {
+    transform: none;
+  }
+
+  .btn-press:active {
+    transform: none;
+  }
 }

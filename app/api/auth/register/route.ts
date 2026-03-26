@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import pool from '@/lib/db';
+import { signToken } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   const { email, password, name } = await req.json();
@@ -22,7 +23,14 @@ export async function POST(req: NextRequest) {
     // 계좌 자동 생성
     await conn.execute('INSERT INTO accounts (user_id) VALUES (?)', [userId]);
 
-    return NextResponse.json({ ok: true });
+    const token = signToken({ userId, email });
+    const res = NextResponse.json({ ok: true });
+    res.cookies.set('token', token, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+    });
+    return res;
   } catch (e: any) {
     if (e.code === 'ER_DUP_ENTRY') {
       return NextResponse.json({ error: '이미 사용 중인 이메일입니다.' }, { status: 409 });
